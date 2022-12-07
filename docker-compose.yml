@@ -35,7 +35,7 @@ services:
       context: .
       dockerfile: Dockerfile-ops
 
-    container_name: ops
+    container_name: ops-daemon
       
     env_file: .env
 
