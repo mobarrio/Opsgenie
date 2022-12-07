@@ -7,7 +7,10 @@ import argparse
 import time
 import datetime
 import opsgenie_sdk
-from datetime import datetime
+import pika
+import json
+from datetime import timezone, datetime, timedelta
+from dateutil import tz
 from distutils.util import strtobool
 from pprint import pprint
 from opsgenie_sdk.rest import ApiException
@@ -15,6 +18,7 @@ from dotenv import load_dotenv
 load_dotenv("/usr/lib/zabbix/externalscripts/pyzabbix/.env")
 
 DEBUG = bool(strtobool(os.environ.get('DEBUG','False')))
+tzone = tz.gettz('Europe/Madrid')
 
 if(DEBUG):
   stream = logging.StreamHandler(sys.stdout)
@@ -23,13 +27,27 @@ if(DEBUG):
   log.addHandler(stream)
   log.setLevel(logging.DEBUG)
 
-
+# Configure OPS connection
 configuration = opsgenie_sdk.Configuration()
 configuration.api_key['Authorization'] = os.environ.get('ops_api_key')
 configuration.host = os.environ.get('ops_api_url')
 opsapi = opsgenie_sdk.AlertApi(opsgenie_sdk.ApiClient(configuration))
 identifier_type = 'id'
 close_alert_payload = opsgenie_sdk.CloseAlertPayload(source=os.environ.get('ops_closer_source'), user=os.environ.get('ops_closer_user'), note=os.environ.get('ops_closer_note'))
+
+def ops_publish_identifier(queue,message):
+    credentials = pika.PlainCredentials(os.environ.get('rmq_username'), os.environ.get('rmq_password'))
+    config      = pika.ConnectionParameters(host=os.environ.get('rmq_server'), port=os.environ.get('rmq_port'), credentials=credentials)
+    connection  = pika.BlockingConnection(config)
+    props       = pika.BasicProperties(delivery_mode = 2)
+    channel     = connection.channel()
+    channel.queue_declare(queue=queue,
+                          durable=True)
+    channel.basic_publish(exchange='',
+                          routing_key=queue,
+                          body=json.dumps(message),
+                          properties=props)
+    connection.close()
 
 def ops_CloseAlerts(identifier,date,msg):
    try:
@@ -53,12 +71,16 @@ def ops_ListAlerts(offset,QueryString,Option):
    try:
       alerts = opsapi.list_alerts(limit=100, offset=offset, sort='updatedAt', order='asc', query=QueryString)
       for alert in alerts.data:
+        created_at = alert.created_at.astimezone(tzone).strftime("%Y-%m-%d %H:%M:%S")
+        # print(created_at, ' - ',alert.id, ' - ', alert.message)
         if Option == 'Close':
-           ops_CloseAlerts(alert.id,alert.created_at,alert.message)
+           #ops_CloseAlerts(alert.id,alert.created_at,alert.message)
+           ops_publish_identifier('opsgenie',{'created_at': created_at, 'id':alert.id, 'message': alert.message,'action':'Close'})
         elif Option == 'Delete':
-           ops_DeleteAlerts(alert.id,alert.created_at,alert.message)
+           #ops_DeleteAlerts(alert.id,alert.created_at,alert.message)
+           ops_publish_identifier('opsgenie',{'created_at': created_at, 'id':alert.id, 'message': alert.message,'action':'Delete'})
         elif Option == 'List':
-           print(alert.created_at, ' - ',alert.id, ' - ', alert.message)
+           print(created_at, ' - ',alert.id, ' - ', alert.message)
         else:
            print(parser.print_help())
 
@@ -95,18 +117,15 @@ try:
          hasta = datetime.now().strftime('%s')
          query = 'createdAt<'+hasta
 
-      ini=0
+      print("Procesando [",ops_CountAlets(query),"] registros")
       max = int(round(ops_CountAlets(query)/100))+1
-      # print("Registros: ", max, " Query: ", query)
-      for i in range(0,max):
-         fin=((i*100)-1)
-         offset=ini
+      for i in range(0,max+1):
+         offset=(((max-i)*100))
          if args.Close:
             ops_ListAlerts(offset,query,'Close')
          elif args.Delete:
             ops_ListAlerts(offset,query,'Delete')
          elif args.List:
             ops_ListAlerts(offset,query,'List')
-         ini=fin+1
 except Exception as e:
    print({"Status": e})
