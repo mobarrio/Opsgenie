@@ -22,9 +22,26 @@ services:
 
 ```
 
+
+# Opsgenie Daemon
 ```
-# ./cleanAlerts.py -h
-usage: cleanAlerts.py [-h] [-f FROM] [-t TO] [--Delete | --no-Delete] [--Close | --no-Close] [--List | --no-List]
+# docker-compose up --build
+# docker-compose -f docker-compose-precompiles.yml up 
+```
+
+# Opsgenie Client
+```
+python3.9 -m venv pyzabbix
+cd pyzabbix
+source bin/activate
+python -m pip install --upgrade pip
+cp ../requirements.txt .
+cp ../opsgenie-client.py .
+cp ../.env .
+pip install -r requirements.txt
+
+# ./opsgenie-client.py -h
+usage: opsgenie-client.py [-h] [-f FROM] [-t TO] [--Delete | --no-Delete] [--Close | --no-Close] [--List | --no-List]
 
 optional arguments:
   -h, --help            show this help message and exit
@@ -34,12 +51,9 @@ optional arguments:
                         Elimina las alertas que cumplen la consulta (default: False)
   --Close, --no-Close   Cierra las alertas que cumplen la consulta (default: False)
   --List, --no-List     Lista las alertas que cumplen la consulta (default: True)
+
+./opsgenie-client.py -t "2022-12-07 15:00:00" --List
+./opsgenie-client.py -t "2022-12-07 15:00:00" --Close
+./opsgenie-client.py -t "2022-12-07 15:00:00" --Delete
 ```
 
-## Ejemplos
-```
- # ./cleanAlerts.py -t "2022-12-07 15:00:00" --Delete
- # ./cleanAlerts.py -t "2022-12-07 15:00:00" --Close
- # ./cleanAlerts.py -t "2022-12-07 15:00:00" --List
-
-```

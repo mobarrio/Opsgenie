@@ -137,6 +137,7 @@ deleteByName.log
 lib64
 lib
 old.deleteByName.py
+pyzabbix/
 
 ./lib64
 ./bin/python3.9

@@ -1,9 +1,7 @@
 FROM python:3.9
 WORKDIR /app
 COPY requirements.txt requirements.txt
-COPY cleanAlertsWaiting.py cleanAlertsWaiting.py
-COPY cleanAlerts.py cleanAlerts.py
-COPY .env .env
+COPY opsgenie-daemon.py opsgenie-daemon.py
 RUN pip install --upgrade pip
 RUN pip3 install -r requirements.txt
-CMD [ "python", "-u", "cleanAlertsWaiting.py" ]
+CMD [ "python", "-u", "opsgenie-daemon.py" ]

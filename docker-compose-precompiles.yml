@@ -2,10 +2,7 @@ version: '3.9'
 
 services:
   rabbitmq:
-    build: 
-      context: .
-      dockerfile: Dockerfile-rabbitmq
-
+    image: mobarrio/opsgenie-rabbitmq:0.0.1
     container_name: rabbitmq
     environment:
       RABBITMQ_ERLANG_COOKIE: ${RABBITMQ_ERLANG_COOKIE:-secret_cookie}
@@ -30,12 +27,9 @@ services:
       - public
 
   opsgenie:
-    build: 
-      context: .
-      dockerfile: Dockerfile-ops
-
+    image: mobarrio/opsgenie-daemon:0.0.1
     container_name: ops-daemon
-      
+
     environment:
       RABBITMQ_DEFAULT_SERVER: 'rabbitmq'
       RABBITMQ_DEFAULT_PORT: 5672
@@ -49,6 +43,9 @@ services:
       OPSGENIE_CLOSER_NOTEe: 'Alert was unnecessary, closed by System'
 
     env_file: .env
+
+    environment:
+      rmq_server: 'rabbitmq'
 
     deploy:
       restart_policy:

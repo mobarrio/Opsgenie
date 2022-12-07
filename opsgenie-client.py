@@ -30,15 +30,15 @@ if(DEBUG):
 
 # Configure OPS connection
 configuration = opsgenie_sdk.Configuration()
-configuration.api_key['Authorization'] = os.environ.get('ops_api_key')
-configuration.host = os.environ.get('ops_api_url')
+configuration.api_key['Authorization'] = os.environ.get('OPSGENIE_API_KEY')
+configuration.host = os.environ.get('OPSGENIE_API_URL')
 opsapi = opsgenie_sdk.AlertApi(opsgenie_sdk.ApiClient(configuration))
 identifier_type = 'id'
-close_alert_payload = opsgenie_sdk.CloseAlertPayload(source=os.environ.get('ops_closer_source'), user=os.environ.get('ops_closer_user'), note=os.environ.get('ops_closer_note'))
+close_alert_payload = opsgenie_sdk.CloseAlertPayload(source=os.environ.get('OPSGENIE_CLOSER_SOURCE'), user=os.environ.get('OPSGENIE_CLOSER_USER'), note=os.environ.get('OPSGENIE_CLOSER_NOTE'))
 
 def ops_publish_identifier(queue,message):
-    credentials = pika.PlainCredentials(os.environ.get('rmq_username'), os.environ.get('rmq_password'))
-    config      = pika.ConnectionParameters(host=os.environ.get('rmq_server'), port=os.environ.get('rmq_port'), credentials=credentials)
+    credentials = pika.PlainCredentials(os.environ.get('RABBITMQ_DEFAULT_USERNAME'), os.environ.get('RABBITMQ_DEFAULT_PASSWORD'))
+    config      = pika.ConnectionParameters(host=os.environ.get('RABBITMQ_DEFAULT_SERVER'), port=os.environ.get('RABBITMQ_DEFAULT_PORT'), credentials=credentials)
     connection  = pika.BlockingConnection(config)
     props       = pika.BasicProperties(delivery_mode = 2)
     channel     = connection.channel()
@@ -60,7 +60,7 @@ def ops_CloseAlerts(identifier,date,msg):
 def ops_DeleteAlerts(identifier,date,msg):
    try:
       print(date, ' - ', identifier, ' - ', msg, ' - Deleted.')
-      api_response = opsapi.delete_alert(identifier, identifier_type=identifier_type, user=os.environ.get('ops_closer_user'), source=os.environ.get('ops_closer_source'))
+      api_response = opsapi.delete_alert(identifier, identifier_type=identifier_type, user=os.environ.get('OPSGENIE_CLOSER_USER'), source=os.environ.get('OPSGENIE_CLOSER_SOURCE'))
    except Exception as e:
       print(str(e))
 
@@ -88,7 +88,7 @@ def ops_ListAlerts(offset,QueryString,Option):
    except Exception as e:
       print(str(e))
 
-parser = argparse.ArgumentParser("cleanAlerts.py")
+parser = argparse.ArgumentParser("opsgenie-client.py")
 parser.add_argument('-f', '--From', help="Fecha desde Ej. 2022-12-05 10:00:00", type=str)
 parser.add_argument('-t', '--To', help="Fecha hasta Ej. 2022-12-05 11:00:00", type=str)
 parser.add_argument('--Delete', help="Elimina las alertas que cumplen la consulta", default=False, action=argparse.BooleanOptionalAction)
