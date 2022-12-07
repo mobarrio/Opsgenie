@@ -1,4 +1,4 @@
-#!/usr/lib/zabbix/externalscripts/pyzabbix/bin/python
+#!/usr/bin/env python
 
 import sys
 import os
@@ -15,9 +15,10 @@ from distutils.util import strtobool
 from pprint import pprint
 from opsgenie_sdk.rest import ApiException
 from dotenv import load_dotenv
-load_dotenv("/usr/lib/zabbix/externalscripts/pyzabbix/.env")
+load_dotenv(".env")
 
 DEBUG = bool(strtobool(os.environ.get('DEBUG','False')))
+DEBUG = True
 tzone = tz.gettz('Europe/Madrid')
 
 if(DEBUG):

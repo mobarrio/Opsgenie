@@ -1,0 +1,9 @@
+FROM python:3.9
+WORKDIR /app
+COPY requirements.txt requirements.txt
+COPY cleanAlertsWaiting.py cleanAlertsWaiting.py
+COPY cleanAlerts.py cleanAlerts.py
+COPY .env .env
+RUN pip install --upgrade pip
+RUN pip3 install -r requirements.txt
+CMD [ "python", "-u", "cleanAlertsWaiting.py" ]
