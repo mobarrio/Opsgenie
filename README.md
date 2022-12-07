@@ -2,7 +2,8 @@
 Conexion a Opsgenie via API para tareas de administración tanto en Opsgenie como en Zabbix (DELETE Alerts, Hosts, etc)
 
 # Docker Compose para RabbitMQ
-docker-compose.yml 
+```
+**# vi docker-compose.yml**
 services:
     rabbitmq:
         image: rabbitmq:management-alpine
@@ -10,3 +11,6 @@ services:
         ports:
             - 5672:5672
             - 15672:15672
+
+**# docker-compose up -d**
+```
