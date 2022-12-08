@@ -42,3 +42,8 @@ optional arguments:
 ./opsgenie-client.py -t "2022-12-07 15:00:00" --Delete
 ```
 
+## Compilar OPSGENIE-CLIENT
+```
+# pip install -U pyinstaller
+# pyinstaller -F opsgenie-client.py
+```

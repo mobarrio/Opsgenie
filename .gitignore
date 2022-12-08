@@ -143,3 +143,4 @@ pyzabbix/
 ./bin/python3.9
 ./bin/python
 ./bin/python3
+opsgenie-client
