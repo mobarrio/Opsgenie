@@ -42,6 +42,8 @@ optional arguments:
 ./opsgenie-client.py -t "2022-12-07 15:00:00" --Delete
 ```
 
+![alt text](https://github.com/mobarrio/Opsgenie/blob/main/images/2022-12-08_19-26-08.png?raw=true)
+
 ## Compilar OPSGENIE-CLIENT
 ```
 # pip install -U pyinstaller
