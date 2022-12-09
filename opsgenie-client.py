@@ -20,6 +20,7 @@ load_dotenv(".env")
 DEBUG = bool(strtobool(os.environ.get('DEBUG','False')))
 DEBUG = True
 tzone = tz.gettz('Europe/Madrid')
+nListed = 0
 
 if(DEBUG):
   stream = logging.StreamHandler(sys.stdout)
@@ -68,20 +69,19 @@ def ops_CountAlets(QueryString):
    api_response = opsapi.count_alerts(query=QueryString)
    return(api_response.data.count)
 
-def ops_ListAlerts(offset,QueryString,Option):
+def ops_DoWork(offset,QueryString,Option):
    try:
       alerts = opsapi.list_alerts(limit=100, offset=offset, sort='updatedAt', order='asc', query=QueryString)
+      global nListed
       for alert in alerts.data:
+        nListed += 1
         created_at = alert.created_at.astimezone(tzone).strftime("%Y-%m-%d %H:%M:%S")
-        # print(created_at, ' - ',alert.id, ' - ', alert.message)
         if Option == 'Close':
-           #ops_CloseAlerts(alert.id,alert.created_at,alert.message)
            ops_publish_identifier('opsgenie',{'created_at': created_at, 'id':alert.id, 'message': alert.message,'action':'Close'})
         elif Option == 'Delete':
-           #ops_DeleteAlerts(alert.id,alert.created_at,alert.message)
            ops_publish_identifier('opsgenie',{'created_at': created_at, 'id':alert.id, 'message': alert.message,'action':'Delete'})
         elif Option == 'List':
-           print(created_at, ' - ',alert.id, ' - ', alert.message)
+           print("%s - [%08d] - %s - %s" % (created_at,nListed,alert.id,alert.message))
         else:
            print(parser.print_help())
 
@@ -118,15 +118,18 @@ try:
          hasta = datetime.now().strftime('%s')
          query = 'createdAt<'+hasta
 
-      print("Procesando [",ops_CountAlets(query),"] registros")
-      max = int(round(ops_CountAlets(query)/100))+1
+      countAlerts = ops_CountAlets(query)
+      max = int(round(countAlerts/100))+1
+      #print("Query : [",query,"] Records: [",countAlerts,"] Iteracciones: [",max,"]")
+      print("Procesando",countAlerts,"registros.")
       for i in range(0,max+1):
          offset=(((max-i)*100))
          if args.Close:
-            ops_ListAlerts(offset,query,'Close')
+            ops_DoWork(offset,query,'Close')
          elif args.Delete:
-            ops_ListAlerts(offset,query,'Delete')
+            ops_DoWork(offset,query,'Delete')
          elif args.List:
-            ops_ListAlerts(offset,query,'List')
+            ops_DoWork(offset,query,'List')
+      print(countAlerts,"registros procesados.")
 except Exception as e:
    print({"Status": e})
