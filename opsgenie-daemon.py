@@ -19,8 +19,10 @@ from opsgenie_sdk.rest import ApiException
 from dotenv import load_dotenv
 load_dotenv(".env")
 
-DEBUG = bool(strtobool(os.environ.get('DEBUG','False')))
-tzone = tz.gettz(os.environ.get('TZ','Europe/Madrid'))
+DEBUG   = bool(strtobool(os.environ.get('DEBUG','False')))
+tzone   = tz.gettz(os.environ.get('TZ','Europe/Madrid'))
+nrecordClosed = 0
+nrecordDeleted = 0
 
 if(DEBUG):
   stream = logging.StreamHandler(sys.stdout)
@@ -37,18 +39,20 @@ opsapi = opsgenie_sdk.AlertApi(opsgenie_sdk.ApiClient(configuration))
 identifier_type = 'id'
 close_alert_payload = opsgenie_sdk.CloseAlertPayload(source=os.environ.get('OPSGENIE_CLOSER_SOURCE'), user=os.environ.get('OPSGENIE_CLOSER_USER'), note=os.environ.get('OPSGENIE_CLOSER_NOTE'))
 
-
 def ops_CloseAlerts(identifier,date,msg):
    try:
-      queuesize = ops_CountAlets()
-      print(date,' - ', queuesize, ' - ', identifier, ' - ', msg, ' - Closed.')
+      global nrecordClosed
+      nrecordClosed += 1
+      print(date,' - ', nrecordClosed, ' - ', identifier, ' - ', msg, ' - Closed.')
       api_response = opsapi.close_alert(identifier,identifier_type=identifier_type,close_alert_payload=close_alert_payload)
    except Exception as e:
       print(str(e))
 
 def ops_DeleteAlerts(identifier,date,msg):
    try:
-      print(date, ' - ', identifier, ' - ', msg, ' - Deleted.')
+      global nrecordDeleted
+      nrecordDeleted += 1
+      print(date,' - ', nrecordDeleted, ' - ', identifier, ' - ', msg, ' - Deleted.')
       api_response = opsapi.delete_alert(identifier, identifier_type=identifier_type, user=os.environ.get('OPSGENIE_CLOSER_USER'), source=os.environ.get('OPSGENIE_CLOSER_SOURCE'))
    except Exception as e:
       print(str(e))
@@ -56,13 +60,6 @@ def ops_DeleteAlerts(identifier,date,msg):
 def ops_CountAlets():
    api_response = opsapi.count_alerts()
    return(api_response.data.count)
-
-#def callback(ch, method, properties, body):
-#    payload = json.loads(body)
-#    if payload['action'] == 'Close':
-#        ops_CloseAlerts(payload['id'],payload['created_at'],payload['message'])
-#    elif payload['action'] == 'Delete':
-#        ops_DeleteAlerts(payload['id'],payload['created_at'],payload['message'])
 
 def ack_message(ch, delivery_tag):
     if ch.is_open:
@@ -102,7 +99,6 @@ def main():
     channel = connection.channel()
     channel.queue_declare(queue='opsgenie', durable=True)
     channel.basic_qos(prefetch_count=10)
-    # channel.basic_consume(queue='opsgenie', on_message_callback=callback, auto_ack=True)
 
     threads = []
     on_message_callback = functools.partial(on_message, args=(connection, threads))
