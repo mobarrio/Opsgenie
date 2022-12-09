@@ -94,6 +94,7 @@ parser.add_argument('-t', '--To', help="Fecha hasta Ej. 2022-12-05 11:00:00", ty
 parser.add_argument('--Delete', help="Elimina las alertas que cumplen la consulta", default=False, action=argparse.BooleanOptionalAction)
 parser.add_argument('--Close', help="Cierra las alertas que cumplen la consulta", default=False, action=argparse.BooleanOptionalAction)
 parser.add_argument('--List', help="Lista las alertas que cumplen la consulta", default=True, action=argparse.BooleanOptionalAction)
+parser.add_argument('--Count', help="Muestra el numero de alertas en el sistema (Abiertas y Cerradas)", default=False, action=argparse.BooleanOptionalAction)
 args = parser.parse_args()
 
 try:
@@ -119,17 +120,22 @@ try:
          query = 'createdAt<'+hasta
 
       countAlerts = ops_CountAlets(query)
-      max = int(round(countAlerts/100))+1
-      #print("Query : [",query,"] Records: [",countAlerts,"] Iteracciones: [",max,"]")
-      print("Procesando",countAlerts,"registros.")
-      for i in range(0,max+1):
-         offset=(((max-i)*100))
-         if args.Close:
-            ops_DoWork(offset,query,'Close')
-         elif args.Delete:
-            ops_DoWork(offset,query,'Delete')
-         elif args.List:
-            ops_DoWork(offset,query,'List')
-      print(countAlerts,"registros procesados.")
+      if args.Count:
+         countAlertsOpen = ops_CountAlets("status=open")
+         countAlertsClosed = ops_CountAlets("status=closed")
+         print(json.dumps({"Total": countAlerts, "Open":countAlertsOpen, "Closed":countAlertsClosed}))
+      else:
+         max = int(round(countAlerts/100))+1
+         #print("Query : [",query,"] Records: [",countAlerts,"] Iteracciones: [",max,"]")
+         print("Procesando",countAlerts,"registros.")
+         for i in range(0,max+1):
+            offset=(((max-i)*100))
+            if args.Close:
+               ops_DoWork(offset,query,'Close')
+            elif args.Delete:
+               ops_DoWork(offset,query,'Delete')
+            elif args.List:
+               ops_DoWork(offset,query,'List')
+         print(countAlerts,"registros procesados.")
 except Exception as e:
    print({"Status": e})
