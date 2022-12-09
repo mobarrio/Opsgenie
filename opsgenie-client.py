@@ -103,20 +103,20 @@ try:
    else:
       query = ""
       if args.From:
-         desde = datetime.strptime(args.From, '%Y-%m-%d %H:%M:%S').strftime('%s')
+         desde = int(datetime.strptime(args.From, '%Y-%m-%d %H:%M:%S').timestamp())
          if query:
             query += ' and createdAt>='+desde
          else:
             query = 'createdAt>='+desde
 
       if args.To:
-         hasta = datetime.strptime(args.To, '%Y-%m-%d %H:%M:%S').strftime('%s')
+         hasta = int(datetime.strptime(args.To, '%Y-%m-%d %H:%M:%S').timestamp())
          if query:
             query += ' and createdAt<='+hasta
          else:
             query = 'createdAt<='+hasta
       else:
-         hasta = datetime.now().strftime('%s')
+         hasta = int(datetime.now().timestamp())
          query = 'createdAt<'+hasta
 
       countAlerts = ops_CountAlets(query)
