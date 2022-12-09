@@ -9,6 +9,7 @@ import datetime
 import opsgenie_sdk
 import pika
 import json
+import warnings
 from datetime import timezone, datetime, timedelta
 from dateutil import tz
 from distutils.util import strtobool
@@ -16,6 +17,7 @@ from pprint import pprint
 from opsgenie_sdk.rest import ApiException
 from dotenv import load_dotenv
 load_dotenv(".env")
+warnings.filterwarnings("ignore", category=UserWarning)
 
 DEBUG = bool(strtobool(os.environ.get('DEBUG','False')))
 DEBUG = True
