@@ -45,22 +45,24 @@ def zbx_deleteHostByID(hostID):
    try:
       result = zapi.host.delete(hostID)
    except Exception as e:
-      print(str(e))
+      print(e)
 
 def getProblemByName(host_name,problem_name):
-   problems = zapi.problem.get(filter={ "value": 1, "host": host_name },output=[ "name","eventid" ],selectTags= "extend",tags=[{"tag": "__zbx_ops_issuekey"}],search={"name": "*"+problem_name+"*"},searchWildcardsEnabled=True,sortorder="ASC")
+   problems = zapi.problem.get(filter={ "value": 1, "host": host_name },output=[ "name","eventid" ],selectTags= "extend",tags=[{"tag": "__zbx_ops_issuekey"}],search={"name": "*"+str(problem_name)+"*"},searchWildcardsEnabled=True,sortorder="ASC")
    for a in problems:
       for tag in a['tags']:
          if '__zbx_ops_issuekey' in tag['tag']:
             identifier = tag['value']
-            save2log("getProblemByName - Hostname: [" + host_name + "] - Problem: [" + problem_name + "] - ID: [" + identifier + "]")
+            save2log("getProblemByName - Hostname: [" + str(host_name) + "] - Problem: [" + str(problem_name) + "] - ID: [" + str(identifier) + "]")
             try:
                 api_response = api_instance.close_alert(identifier,identifier_type=identifier_type,close_alert_payload=close_alert_payload)
-            except ApiException as e:
-                print(str(e))
+            except Exception as e:
+                # print(e)
+                pass
+   
 
 def zbx_CloseActiveProblems(host_name):
-   save2log("zbx_CloseActiveProblems - Hostname: [" + host_name + "]")
+   save2log("zbx_CloseActiveProblems - Hostname: [" + str(host_name) + "]")
    # Get a list of all issues (AKA tripped triggers)
    triggers = zapi.trigger.get( only_true=1, active=1, output="extend", expandDescription=1, selectHosts=["host"], filter={"host": host_name, "value": 1})
    # Print a list containing only "tripped" triggers
@@ -72,7 +74,7 @@ def save2log(line):
    # current dateTime
    now = datetime.now()
    date_time_str = now.strftime("%Y-%m-%d %H:%M:%S - ")
-   file.writelines("{}\n".format(date_time_str + line))
+   file.writelines("{}\n".format(str(date_time_str) + str(line)))
 
 parser = argparse.ArgumentParser("settriggerdependency.py")
 parser.add_argument('-n', '--hostname', help="Nombre del Host en Zabbix", type=str)
