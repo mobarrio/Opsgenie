@@ -101,7 +101,7 @@ parser.add_argument('-cc', '--Count', help="Muestra el numero de alertas en el s
 args = parser.parse_args()
 
 try:
-   if not (args.From or args.To or args.List):
+   if not (args.From or args.To or args.List or args.Count):
       print(parser.print_help())
    else:
       query = ""
