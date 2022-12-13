@@ -18,9 +18,9 @@ from opsgenie_sdk.rest import ApiException
 from dotenv import load_dotenv
 load_dotenv(".env")
 warnings.filterwarnings("ignore", category=UserWarning)
+sys.tracebacklimit = 0
 
 DEBUG = bool(strtobool(os.environ.get('DEBUG','False')))
-DEBUG = True
 tzone = tz.gettz('Europe/Madrid')
 nListed = 0
 
@@ -30,6 +30,7 @@ if(DEBUG):
   log = logging.getLogger('pyzabbix')
   log.addHandler(stream)
   log.setLevel(logging.DEBUG)
+  sys.tracebacklimit = 1000
 
 # Configure OPS connection
 configuration = opsgenie_sdk.Configuration()
@@ -93,10 +94,10 @@ def ops_DoWork(offset,QueryString,Option):
 parser = argparse.ArgumentParser("opsgenie-client.py")
 parser.add_argument('-f', '--From', help="Fecha desde Ej. 2022-12-05 10:00:00", type=str)
 parser.add_argument('-t', '--To', help="Fecha hasta Ej. 2022-12-05 11:00:00", type=str)
-parser.add_argument('--Delete', help="Elimina las alertas que cumplen la consulta", default=False, action=argparse.BooleanOptionalAction)
-parser.add_argument('--Close', help="Cierra las alertas que cumplen la consulta", default=False, action=argparse.BooleanOptionalAction)
-parser.add_argument('--List', help="Lista las alertas que cumplen la consulta", default=True, action=argparse.BooleanOptionalAction)
-parser.add_argument('--Count', help="Muestra el numero de alertas en el sistema (Abiertas y Cerradas)", default=False, action=argparse.BooleanOptionalAction)
+parser.add_argument('-d', '--Delete', help="Elimina las alertas que cumplen la consulta", default=False, action=argparse.BooleanOptionalAction)
+parser.add_argument('-c', '--Close', help="Cierra las alertas que cumplen la consulta", default=False, action=argparse.BooleanOptionalAction)
+parser.add_argument('-l', '--List', help="Lista las alertas que cumplen la consulta", default=False, action=argparse.BooleanOptionalAction)
+parser.add_argument('-cc', '--Count', help="Muestra el numero de alertas en el sistema (Abiertas y Cerradas)", default=False, action=argparse.BooleanOptionalAction)
 args = parser.parse_args()
 
 try:
@@ -127,17 +128,20 @@ try:
          countAlertsClosed = ops_CountAlets("status=closed")
          print(json.dumps({"Total": countAlerts, "Open":countAlertsOpen, "Closed":countAlertsClosed}))
       else:
-         max = int(round(countAlerts/100))+1
-         #print("Query : [",query,"] Records: [",countAlerts,"] Iteracciones: [",max,"]")
-         print("Procesando",countAlerts,"registros.")
-         for i in range(0,max+1):
-            offset=(((max-i)*100))
-            if args.Close:
-               ops_DoWork(offset,query,'Close')
-            elif args.Delete:
-               ops_DoWork(offset,query,'Delete')
-            elif args.List:
-               ops_DoWork(offset,query,'List')
-         print(countAlerts,"registros procesados.")
+         try:
+            max = int(round(countAlerts/100))+1
+            #print("Query : [",query,"] Records: [",countAlerts,"] Iteracciones: [",max,"]")
+            print("Procesando",countAlerts,"registros.")
+            for i in range(0,max+1):
+               offset=(((max-i)*100))
+               if args.Close:
+                  ops_DoWork(offset,query,'Close')
+               elif args.Delete:
+                  ops_DoWork(offset,query,'Delete')
+               elif args.List:
+                  ops_DoWork(offset,query,'List')
+            print(countAlerts,"registros procesados.")
+         except Exception as e:
+            print({"Status": e})
 except Exception as e:
    print({"Status": e})
