@@ -91,57 +91,63 @@ def ops_DoWork(offset,QueryString,Option):
    except Exception as e:
       print(str(e))
 
-parser = argparse.ArgumentParser("opsgenie-client.py")
-parser.add_argument('-f', '--From', help="Fecha desde Ej. 2022-12-05 10:00:00", type=str)
-parser.add_argument('-t', '--To', help="Fecha hasta Ej. 2022-12-05 11:00:00", type=str)
-parser.add_argument('-d', '--Delete', help="Elimina las alertas que cumplen la consulta", default=False, action=argparse.BooleanOptionalAction)
-parser.add_argument('-c', '--Close', help="Cierra las alertas que cumplen la consulta", default=False, action=argparse.BooleanOptionalAction)
-parser.add_argument('-l', '--List', help="Lista las alertas que cumplen la consulta", default=False, action=argparse.BooleanOptionalAction)
-parser.add_argument('-cc', '--Count', help="Muestra el numero de alertas en el sistema (Abiertas y Cerradas)", default=False, action=argparse.BooleanOptionalAction)
-args = parser.parse_args()
+def main():
+   parser = argparse.ArgumentParser("opsgenie-client.py")
+   parser.add_argument('-f', '--From',   help="Fecha desde Ej. '2022-12-05 00:00:00'.",                default='',    type=str)
+   parser.add_argument('-t', '--To',     help="Fecha hasta Ej. '2022-12-05 23:59:59'.",                default='',    type=str)
+   parser.add_argument('-d', '--Delete', help="Elimina las alertas que cumplen la consulta.",          default=False, action=argparse.BooleanOptionalAction)
+   parser.add_argument('-c', '--Close',  help="Cierra las alertas que cumplen la consulta.",           default=False, action=argparse.BooleanOptionalAction)
+   parser.add_argument('-l', '--List',   help="Lista las alertas que cumplen la consulta.",            default=False, action=argparse.BooleanOptionalAction)
+   parser.add_argument('-n', '--Count',  help="Muestra el numero de todas las alertas en el sistema.", default=False, action=argparse.BooleanOptionalAction)
+   args = parser.parse_args()
 
-try:
-   if not (args.From or args.To or args.List or args.Count):
-      print(parser.print_help())
-   else:
-      query = ""
-      if args.From:
-         desde = int(datetime.strptime(args.From, '%Y-%m-%d %H:%M:%S').timestamp())
-         if query:
-            query += ' and createdAt>='+str(desde)
-         else:
-            query = 'createdAt>='+str(desde)
-
-      if args.To:
-         hasta = int(datetime.strptime(args.To, '%Y-%m-%d %H:%M:%S').timestamp())
-         if query:
-            query += ' and createdAt<='+str(hasta)
-         else:
-            query = 'createdAt<='+str(hasta)
+   try:
+      if not (args.From or args.To or args.List or args.Count):
+         print(parser.print_help())
       else:
-         hasta = int(datetime.now().timestamp())
-         query = 'createdAt<'+str(hasta)
+         query = ""
+         if args.From:
+            desde = int(datetime.strptime(args.From, '%Y-%m-%d %H:%M:%S').timestamp())
+            if query:
+               query += ' and createdAt>='+str(desde)
+            else:
+               query = 'createdAt>='+str(desde)
 
-      countAlerts = ops_CountAlets(query)
-      if args.Count:
-         countAlertsOpen = ops_CountAlets("status=open")
-         countAlertsClosed = ops_CountAlets("status=closed")
-         print(json.dumps({"Total": countAlerts, "Open":countAlertsOpen, "Closed":countAlertsClosed}))
-      else:
-         try:
-            max = int(round(countAlerts/100))+1
-            #print("Query : [",query,"] Records: [",countAlerts,"] Iteracciones: [",max,"]")
-            print("Procesando",countAlerts,"registros.")
-            for i in range(0,max+1):
-               offset=(((max-i)*100))
-               if args.Close:
-                  ops_DoWork(offset,query,'Close')
-               elif args.Delete:
-                  ops_DoWork(offset,query,'Delete')
-               elif args.List:
-                  ops_DoWork(offset,query,'List')
-            print(countAlerts,"registros procesados.")
-         except Exception as e:
-            print({"Status": e})
-except Exception as e:
-   print({"Status": e})
+         if args.To:
+            hasta = int(datetime.strptime(args.To, '%Y-%m-%d %H:%M:%S').timestamp())
+            if query:
+               query += ' and createdAt<='+str(hasta)
+            else:
+               query = 'createdAt<='+str(hasta)
+         else:
+            hasta = int(datetime.now().timestamp())
+            query = 'createdAt<'+str(hasta)
+   
+         if args.Close:
+            query += " and status: open"
+
+         countAlerts = ops_CountAlets(query)
+         if args.Count:
+            countAlertsOpen = ops_CountAlets("status=open")
+            countAlertsClosed = ops_CountAlets("status=closed")
+            print(json.dumps({"Total": countAlerts, "Open":countAlertsOpen, "Closed":countAlertsClosed}))
+         else:
+            try:
+               max = int(round(countAlerts/100))+1
+               #print("Query : [",query,"] Records: [",countAlerts,"] Iteracciones: [",max,"]")
+               print("Procesando",countAlerts,"registros.")
+               for i in range(0,max+1):
+                  offset=(((max-i)*100))
+                  if args.Close:
+                     ops_DoWork(offset,query,'Close')
+                  elif args.Delete:
+                     ops_DoWork(offset,query,'Delete')
+                  elif args.List:
+                     ops_DoWork(offset,query,'List')
+               print(countAlerts,"registros procesados.")
+            except Exception as e:
+               print({"Status": e})
+   except Exception as e:
+      print({"Status": e})
+
+main()
